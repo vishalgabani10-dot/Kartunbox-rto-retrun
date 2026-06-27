@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KARTUNBOX | Smart E-commerce Stock & RTO Management</title>
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Chart.js for premium visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar">
+        <div class="brand">
+            <div class="brand-logo">
+                <svg viewBox="0 0 24 24">
+                    <path d="M20 7h-4V5c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zM10 5h4v2h-4V5zm10 15H4V9h16v11z"/>
+                    <path d="M12 12c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3zm0 4c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/>
+                </svg>
+            </div>
+            <span class="brand-name">KARTUNBOX</span>
+        </div>
+
+        <ul class="nav-links">
+            <li class="nav-item">
+                <a class="nav-link active" data-section="dashboard">
+                    <svg viewBox="0 0 24 24">
+                        <rect x="3" y="3" width="7" height="9" rx="1"/>
+                        <rect x="14" y="3" width="7" height="5" rx="1"/>
+                        <rect x="14" y="12" width="7" height="9" rx="1"/>
+                        <rect x="3" y="16" width="7" height="5" rx="1"/>
+                    </svg>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-section="inventory">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="6" cy="6" r="1.5" fill="currentColor"/>
+                        <circle cx="6" cy="12" r="1.5" fill="currentColor"/>
+                        <circle cx="6" cy="18" r="1.5" fill="currentColor"/>
+                    </svg>
+                    <span>Inventory (Stock)</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-section="rto-logger">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M9 11l3 3L22 4" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>Returns & RTO Logs</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-section="sync-channel">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H17m-.5 4h.01M12 8V4M8 12h.01M16 16h.01M8 16h.01M12 16h.01M12 20v-4" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>Channel Sync</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-section="analytics">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M18 20V10M12 20V4M6 20v-6" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>RTO Analytics</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="sidebar-footer">
+            <div class="profile-info">
+                <div class="profile-img">KB</div>
+                <div class="profile-details">
+                    <h4>KARTUNBOX</h4>
+                    <p>Seller Admin Panel</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Panel -->
+    <main>
+        <!-- Header -->
+        <header>
+            <div class="header-title">
+                <h1 id="page-title">Dashboard Overview</h1>
+                <p id="page-desc">Real-time e-commerce synchronization and return intelligence.</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-secondary" id="export-csv-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                    </svg>
+                    <span>Export CSV Data</span>
+                </button>
+                <button class="btn btn-primary" id="global-sync-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="sync-btn-icon">
+                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                    </svg>
+                    <span>Sync Marketplace Inventory</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- SECTION 1: DASHBOARD OVERVIEW -->
+        <section id="dashboard-section" class="dashboard-section active">
+            <!-- Stats Widgets -->
+            <div class="stats-grid">
+                <div class="glass-card stat-card">
+                    <div class="stat-header">
+                        <span>Total Active SKUs</span>
+                        <div class="stat-icon" style="background: rgba(99, 102, 241, 0.15); color: var(--color-primary);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 7H4M20 12H4M20 17H4" stroke-width="2" stroke-linecap="round"/></svg>
+                        </div>
+                    </div>
+                    <div class="stat-value" id="stat-total-skus">0</div>
+                    <div class="stat-footer">
+                        <span>Catalog Products loaded</span>
+                    </div>
+                </div>
+
+                <div class="glass-card stat-card">
+                    <div class="stat-header">
+                        <span>Total Warehouse Stock</span>
+                        <div class="stat-icon" style="background: rgba(6, 182, 212, 0.15); color: var(--color-accent);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" stroke-width="2" stroke-linecap="round"/></svg>
+                        </div>
+                    </div>
+                    <div class="stat-value" id="stat-total-stock">0</div>
+                    <div class="stat-footer">
+                        <span>Total units on hand</span>
+                    </div>
+                </div>
+
+                <div class="glass-card stat-card">
+                    <div class="stat-header">
+                        <span>Low Stock Alerts</span>
+                        <div class="stat-icon" style="background: rgba(245, 158, 11, 0.15); color: var(--color-warning);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </div>
+                    </div>
+                    <div class="stat-value text-warning" id="stat-low-stock">0</div>
+                    <div class="stat-footer">
+                        <span>Require restocking attention</span>
+                    </div>
+                </div>
+
+                <div class="glass-card stat-card">
+                    <div class="stat-header">
+                        <span>Avg Return & RTO Rate</span>
+                        <div class="stat-icon" style="background: rgba(244, 63, 94, 0.15); color: var(--color-meesho);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10 19l-7-7m0 0l7-7m-7 7h18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </div>
+                    </div>
+                    <div class="stat-value" id="stat-rto-rate">0.0%</div>
+                    <div class="stat-footer">
+                        <span id="stat-rto-trend" class="stat-trend-down">0.0% this week</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sync Panel & Quick Channels -->
+            <div class="sync-panel">
+                <div class="glass-card sync-status-box">
+                    <div>
+                        <h3 class="chart-title">Marketplace Channel Status</h3>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">Live connection states for SKU-level synchronization.</p>
+                    </div>
+                    
+                    <div class="channels-container">
+                        <div class="channel-row">
+                            <div class="channel-info">
+                                <div class="channel-logo amazon">AM</div>
+                                <div class="channel-details">
+                                    <h4>Amazon Marketplace</h4>
+                                    <p id="channel-amazon-text">Last synced: Just now</p>
+                                </div>
+                            </div>
+                            <div class="channel-sync-status">
+                                <span class="sync-badge synced" id="badge-amazon">Synced</span>
+                            </div>
+                        </div>
+
+                        <div class="channel-row">
+                            <div class="channel-info">
+                                <div class="channel-logo flipkart">FK</div>
+                                <div class="channel-details">
+                                    <h4>Flipkart Seller Central</h4>
+                                    <p id="channel-flipkart-text">Last synced: Just now</p>
+                                </div>
+                            </div>
+                            <div class="channel-sync-status">
+                                <span class="sync-badge synced" id="badge-flipkart">Synced</span>
+                            </div>
+                        </div>
+
+                        <div class="channel-row">
+                            <div class="channel-info">
+                                <div class="channel-logo meesho">MS</div>
+                                <div class="channel-details">
+                                    <h4>Meesho Supplier Panel</h4>
+                                    <p id="channel-meesho-text">Last synced: Just now</p>
+                                </div>
+                            </div>
+                            <div class="channel-sync-status">
+                                <span class="sync-badge synced" id="badge-meesho">Synced</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fast Actions / Sync Log summary -->
+                <div class="glass-card" style="display: flex; flex-direction: column;">
+                    <div style="margin-bottom: 1rem;">
+                        <h3 class="chart-title">Recent Sync Event Logs</h3>
+                        <p style="color: var(--text-muted); font-size: 0.8rem;">Audit log for channel updates</p>
+                    </div>
+                    <div class="sync-logs-list" id="dashboard-sync-logs">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Low Stock Table Overview -->
+            <div class="glass-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <div>
+                        <h3 class="chart-title">Low Stock Alert Dashboard</h3>
+                        <p style="color: var(--text-muted); font-size: 0.85rem;">SKUs falling below alert thresholds. Replenish inventory immediately.</p>
+                    </div>
+                    <button class="btn btn-secondary btn-secondary" onclick="document.querySelector('[data-section=inventory]').click()">Go to Inventory Manager</button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>SKU Code</th>
+                                <th>Product Name</th>
+                                <th>Alert Threshold</th>
+                                <th>Warehouse stock</th>
+                                <th>Amazon SKU Stock</th>
+                                <th>Flipkart SKU Stock</th>
+                                <th>Meesho SKU Stock</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="low-stock-table-body">
+                            <!-- Filled dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: INVENTORY MANAGER -->
+        <section id="inventory-section" class="dashboard-section">
+            <div class="split-layout">
+                <!-- Add/Edit Form -->
+                <div class="glass-card">
+                    <h3 class="chart-title" id="sku-form-title" style="margin-bottom: 1.5rem;">Add New SKU</h3>
+                    <form id="sku-form">
+                        <input type="hidden" id="sku-form-edit-id">
+                        
+                        <div class="form-group">
+                            <label for="sku-code">SKU Code (Unique ID) *</label>
+                            <input type="text" id="sku-code" class="form-control" placeholder="e.g. KT-BOX-001" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="sku-name">Product Name *</label>
+                            <input type="text" id="sku-name" class="form-control" placeholder="e.g. Cardboard Storage Box Small" required>
+                        </div>
+
+                        <div class="form-row-2">
+                            <div class="form-group">
+                                <label for="sku-warehouse-stock">Warehouse Stock *</label>
+                                <input type="number" id="sku-warehouse-stock" class="form-control" value="100" min="0" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="sku-threshold">Alert Threshold *</label>
+                                <input type="number" id="sku-threshold" class="form-control" value="20" min="0" required>
+                            </div>
+                        </div>
+
+                        <div style="border-top: 1px solid var(--border-color); margin: 1.5rem 0; padding-top: 1rem;">
+                            <h4 style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.75rem;">Simulated Channel Stock Ratios</h4>
+                            <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1rem;">These ratios calculate stock allocated automatically from the Warehouse stock to marketplaces during sync.</p>
+                            
+                            <div class="form-row-2">
+                                <div class="form-group">
+                                    <label for="sku-ratio-amazon">Amazon Stock (%)</label>
+                                    <input type="number" id="sku-ratio-amazon" class="form-control" value="30" min="0" max="100">
+                                </div>
+                                <div class="form-group">
+                                    <label for="sku-ratio-flipkart">Flipkart Stock (%)</label>
+                                    <input type="number" id="sku-ratio-flipkart" class="form-control" value="30" min="0" max="100">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="sku-ratio-meesho">Meesho Stock (%)</label>
+                                <input type="number" id="sku-ratio-meesho" class="form-control" value="40" min="0" max="100">
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 0.75rem;">
+                            <button type="submit" class="btn btn-primary" style="flex: 1;">Save SKU</button>
+                            <button type="button" id="sku-form-cancel" class="btn btn-secondary" style="display: none;">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Products Table -->
+                <div class="glass-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                        <h3 class="chart-title">Product SKU Catalog</h3>
+                        <div class="search-box-container">
+                            <svg viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke="currentColor" stroke-linecap="round"/></svg>
+                            <input type="text" id="inventory-search" class="form-control" placeholder="Search SKU or Name...">
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <th>SKU Details</th>
+                                <th>Warehouse</th>
+                                <th>Amazon</th>
+                                <th>Flipkart</th>
+                                <th>Meesho</th>
+                                <th>Sync Status</th>
+                                <th style="text-align: right;">Actions</th>
+                            </thead>
+                            <tbody id="inventory-table-body">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: RETURN & RTO LOGGER -->
+        <section id="rto-logger-section" class="dashboard-section">
+            <div class="split-layout">
+                <!-- Log Entry Form -->
+                <div class="glass-card">
+                    <h3 class="chart-title" style="margin-bottom: 1.5rem;">Log Return & RTO</h3>
+                    <form id="rto-form">
+                        <div class="form-group">
+                            <label for="rto-marketplace">Marketplace Channel *</label>
+                            <select id="rto-marketplace" class="form-control" required>
+                                <option value="amazon">Amazon</option>
+                                <option value="flipkart">Flipkart</option>
+                                <option value="meesho">Meesho</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="rto-order-id">Order ID *</label>
+                            <input type="text" id="rto-order-id" class="form-control" placeholder="e.g. OD4810237910 or 403-128381" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="rto-sku">Select SKU *</label>
+                            <select id="rto-sku" class="form-control" required>
+                                <!-- Populated dynamically from SKUs -->
+                            </select>
+                        </div>
+
+                        <div class="form-row-2">
+                            <div class="form-group">
+                                <label for="rto-type">Entry Type *</label>
+                                <select id="rto-type" class="form-control" required>
+                                    <option value="RTO">RTO (Customer Rejected/Undelivered)</option>
+                                    <option value="Return">Customer Return (Opened/Used)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="rto-qty">Quantity *</label>
+                                <input type="number" id="rto-qty" class="form-control" value="1" min="1" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="rto-reason">Reason *</label>
+                            <select id="rto-reason" class="form-control" required>
+                                <option value="Customer Rejected">Customer Rejected at Delivery (RTO)</option>
+                                <option value="Address Incomplete">Incorrect/Incomplete Address (RTO)</option>
+                                <option value="Wrong Item Received">Wrong Item Received (Customer Return)</option>
+                                <option value="Product Damaged">Product Damaged in Transit (Return/RTO)</option>
+                                <option value="Defective Product">Defective Product/Quality Issues (Customer Return)</option>
+                                <option value="Not Needed Anymore">Not Needed/Changed Mind (Customer Return)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="rto-status">Inventory Restocking Status *</label>
+                            <select id="rto-status" class="form-control" required>
+                                <option value="pending">Pending Review (Inspection required)</option>
+                                <option value="restocked">Restocked (Add back to warehouse stock)</option>
+                                <option value="damaged">Damaged/Scrapped (Do not add to stock)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="rto-date">Date logged *</label>
+                            <input type="date" id="rto-date" class="form-control" required>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Log Entry & Process Stock</button>
+                    </form>
+                </div>
+
+                <!-- Returns List -->
+                <div class="glass-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                        <h3 class="chart-title">Logged Return / RTO Audits</h3>
+                        <div class="form-row-2" style="gap: 0.5rem;">
+                            <select id="filter-rto-marketplace" class="form-control" style="width: 130px; font-size: 0.8rem; padding: 0.5rem 1rem;">
+                                <option value="all">All Channels</option>
+                                <option value="amazon">Amazon</option>
+                                <option value="flipkart">Flipkart</option>
+                                <option value="meesho">Meesho</option>
+                            </select>
+                            <select id="filter-rto-type" class="form-control" style="width: 130px; font-size: 0.8rem; padding: 0.5rem 1rem;">
+                                <option value="all">All Types</option>
+                                <option value="RTO">RTO Only</option>
+                                <option value="Return">Customer Return</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="table-container" style="max-height: 520px; overflow-y: auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Order Info</th>
+                                    <th>SKU</th>
+                                    <th>Type</th>
+                                    <th>Qty</th>
+                                    <th>Reason</th>
+                                    <th>Restock State</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rto-table-body">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: CHANNEL SYNC CONTROLS -->
+        <section id="sync-channel-section" class="dashboard-section">
+            <div class="sync-panel">
+                <div class="glass-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+                    <div>
+                        <h3 class="chart-title">Marketplace API Synchronization Panel</h3>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">
+                            Control how your warehouse inventory distributes to individual seller marketplaces. Adjust connections dynamically.
+                        </p>
+                    </div>
+
+                    <div style="margin: 2rem 0;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span style="font-size: 0.9rem; font-weight: 500;">Channel Communication Stream</span>
+                            <span id="sync-progress-percentage" style="font-size: 0.9rem; font-weight: bold; color: var(--color-accent);">100% Synced</span>
+                        </div>
+                        <div style="width: 100%; height: 8px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; overflow: hidden;">
+                            <div id="sync-progress-bar" style="width: 100%; height: 100%; background: linear-gradient(90deg, var(--color-primary), var(--color-accent)); transition: width 0.3s;"></div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem;">
+                        <button class="btn btn-primary" id="manual-sync-btn" style="flex: 1;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="sync-btn-icon-panel">
+                                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                            </svg>
+                            <span>Trigger Force Sync All (SKU-wise)</span>
+                        </button>
+                        <button class="btn btn-secondary" id="clear-logs-btn">Clear Logs</button>
+                    </div>
+                </div>
+
+                <div class="glass-card" style="display: flex; flex-direction: column;">
+                    <h3 class="chart-title" style="margin-bottom: 1rem;">Sync Status Overview</h3>
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        <div class="channel-row">
+                            <span>Amazon Direct API v2.4</span>
+                            <span class="stock-indicator in-stock"><span class="indicator-dot"></span>Connected</span>
+                        </div>
+                        <div class="channel-row">
+                            <span>Flipkart Seller API v3.0</span>
+                            <span class="stock-indicator in-stock"><span class="indicator-dot"></span>Connected</span>
+                        </div>
+                        <div class="channel-row">
+                            <span>Meesho Supplier SDK v1.1</span>
+                            <span class="stock-indicator in-stock"><span class="indicator-dot"></span>Connected</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Full Logs screen -->
+            <div class="glass-card">
+                <h3 class="chart-title" style="margin-bottom: 1rem;">Detailed Sync Action Logs</h3>
+                <div class="sync-logs-list" id="full-sync-logs" style="max-height: 400px;">
+                    <!-- JS fills logs -->
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 5: RTO ANALYTICS -->
+        <section id="analytics-section" class="dashboard-section">
+            <!-- Charts and Reports -->
+            <div class="charts-grid">
+                <div class="glass-card chart-card">
+                    <div class="chart-header">
+                        <h3 class="chart-title">Marketplace Return & RTO Distribution</h3>
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">By Order Volume</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="marketplaceComparisonChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="glass-card chart-card">
+                    <div class="chart-header">
+                        <h3 class="chart-title">Reasons for Return/RTO</h3>
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">Root Cause Analysis</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="returnReasonsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="glass-card chart-card">
+                    <div class="chart-header">
+                        <h3 class="chart-title">RTO & Return Trend (Last 6 Months)</h3>
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">Monthly Comparison</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="rtoTrendChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="glass-card chart-card">
+                    <div class="chart-header">
+                        <h3 class="chart-title">SKU-Wise Return Volume (Top 5)</h3>
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">High Return Products</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="skuReturnChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Return Financial Analysis -->
+            <div class="glass-card" style="margin-top: 1.5rem;">
+                <h3 class="chart-title" style="margin-bottom: 1rem;">Financial Impact Analysis</h3>
+                <div class="stats-grid" style="margin-bottom: 0;">
+                    <div class="glass-card" style="background: rgba(239, 68, 68, 0.05); border-color: rgba(239, 68, 68, 0.15);">
+                        <h4 style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Estimated Loss from Damaged Items</h4>
+                        <div class="stat-value" id="financial-loss-damaged" style="color: var(--color-danger);">₹0</div>
+                        <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">Items scrapped due to return damage (calculated at average ₹200 item cost).</p>
+                    </div>
+                    <div class="glass-card" style="background: rgba(245, 158, 11, 0.05); border-color: rgba(245, 158, 11, 0.15);">
+                        <h4 style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Estimated Forward & Reverse Shipping Waste</h4>
+                        <div class="stat-value" id="financial-loss-shipping" style="color: var(--color-warning);">₹0</div>
+                        <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">Wasted shipping charges on RTO deliveries (calculated at average ₹80 per RTO).</p>
+                    </div>
+                    <div class="glass-card" style="background: rgba(16, 185, 129, 0.05); border-color: rgba(16, 185, 129, 0.15);">
+                        <h4 style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Recovered Product Inventory Value</h4>
+                        <div class="stat-value" id="financial-recovered" style="color: var(--color-success);">₹0</div>
+                        <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">Value of restocked items returned in resalable condition.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal for Editing Stock levels quickly (Optional detailed edit modal) -->
+    <div class="modal-overlay" id="edit-stock-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Adjust SKU Stock Details</h3>
+                <button class="modal-close" id="modal-close-btn">&times;</button>
+            </div>
+            <form id="edit-sku-modal-form">
+                <input type="hidden" id="modal-sku-id">
+                
+                <div class="form-group">
+                    <label for="modal-sku-code">SKU Code</label>
+                    <input type="text" id="modal-sku-code" class="form-control" readonly style="background: rgba(255, 255, 255, 0.05); cursor: not-allowed;">
+                </div>
+
+                <div class="form-group">
+                    <label for="modal-sku-name">Product Name</label>
+                    <input type="text" id="modal-sku-name" class="form-control" required>
+                </div>
+
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label for="modal-sku-stock">Warehouse Stock</label>
+                        <input type="number" id="modal-sku-stock" class="form-control" required min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="modal-sku-threshold">Alert Threshold</label>
+                        <input type="number" id="modal-sku-threshold" class="form-control" required min="0">
+                    </div>
+                </div>
+
+                <div style="border-top: 1px solid var(--border-color); margin: 1.5rem 0; padding-top: 1rem;">
+                    <h4 style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.75rem;">Simulated Channel Stock Allocation (%)</h4>
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label for="modal-ratio-amazon">Amazon</label>
+                            <input type="number" id="modal-ratio-amazon" class="form-control" required min="0" max="100">
+                        </div>
+                        <div class="form-group">
+                            <label for="modal-ratio-flipkart">Flipkart</label>
+                            <input type="number" id="modal-ratio-flipkart" class="form-control" required min="0" max="100">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="modal-ratio-meesho">Meesho</label>
+                        <input type="number" id="modal-ratio-meesho" class="form-control" required min="0" max="100">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Save Changes & Sync Channels</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Script loading -->
+    <script src="app.js"></script>
+</body>
+</html>
