@@ -1,6 +1,11 @@
 // KARTUNBOX Stock & RTO Management System - Core JS Logic
 
-// Default Mock Data if LocalStorage is empty
+// Supabase Configuration
+const SUPABASE_URL = "https://qsnvrasbwxegzirdicie.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_DeoGyMBpjl6Kn6HPBk5RnA_7jZ1F930";
+let supabaseClient = null;
+
+// Default Mock Data if local storage & database are empty
 const defaultSKUs = [
     { id: "1", code: "KB-BOX-S1", name: "Craft Shipping Box Small (7x4x3)", warehouseStock: 450, threshold: 50, ratioAmazon: 30, ratioFlipkart: 30, ratioMeesho: 40 },
     { id: "2", code: "KB-BOX-M2", name: "Corrugated Storage Box Medium (10x8x6)", warehouseStock: 85, threshold: 30, ratioAmazon: 40, ratioFlipkart: 20, ratioMeesho: 40 },
@@ -38,8 +43,9 @@ let trendChart = null;
 let skuChart = null;
 
 // Initialize App
-document.addEventListener("DOMContentLoaded", () => {
-    loadData();
+document.addEventListener("DOMContentLoaded", async () => {
+    initSupabase();
+    await loadData();
     initNavigation();
     initForms();
     initSearchAndFilters();
@@ -54,35 +60,160 @@ document.addEventListener("DOMContentLoaded", () => {
     simulateChannelSync(true);
 });
 
-// Load data from LocalStorage
-function loadData() {
+// Initialize Supabase Client
+function initSupabase() {
+    try {
+        if (window.supabase) {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            console.log("Supabase Client initialized successfully.");
+        } else {
+            console.warn("Supabase library not loaded.");
+            updateSupabaseStatus("offline", "Supabase client not loaded. Running in local mode.");
+        }
+    } catch (error) {
+        console.error("Error initializing Supabase client:", error);
+        updateSupabaseStatus("offline", "Connection error. Running in local mode.");
+    }
+}
+
+// Update Database Status badge in UI
+function updateSupabaseStatus(state, message) {
+    const statusText = document.getElementById("supabase-status-text");
+    const statusIndicator = document.getElementById("supabase-status-indicator");
+    
+    if (!statusText || !statusIndicator) return;
+
+    statusText.textContent = message;
+    
+    if (state === "online") {
+        statusIndicator.className = "stock-indicator in-stock";
+    } else if (state === "syncing") {
+        statusIndicator.className = "stock-indicator low-stock";
+    } else {
+        statusIndicator.className = "stock-indicator out-of-stock";
+    }
+}
+
+// Load data from Supabase (with LocalStorage cache fallback)
+async function loadData() {
+    // 1. Load LocalStorage first so the user gets an instant paint
     const savedSKUs = localStorage.getItem("kartunbox_skus");
     const savedReturns = localStorage.getItem("kartunbox_returns");
     const savedLogs = localStorage.getItem("kartunbox_logs");
 
-    if (savedSKUs) {
-        skus = JSON.parse(savedSKUs);
-    } else {
-        skus = [...defaultSKUs];
-        localStorage.setItem("kartunbox_skus", JSON.stringify(skus));
+    if (savedSKUs) skus = JSON.parse(savedSKUs);
+    else skus = [...defaultSKUs];
+
+    if (savedReturns) returns = JSON.parse(savedReturns);
+    else returns = [...defaultReturns];
+
+    if (savedLogs) syncLogs = JSON.parse(savedLogs);
+    else syncLogs = [...defaultSyncLogs];
+
+    // 2. Attempt to load from Supabase
+    if (!supabaseClient) {
+        updateSupabaseStatus("offline", "Supabase client uninitialized. Local Mode active.");
+        return;
     }
 
-    if (savedReturns) {
-        returns = JSON.parse(savedReturns);
-    } else {
-        returns = [...defaultReturns];
-        localStorage.setItem("kartunbox_returns", JSON.stringify(returns));
-    }
+    updateSupabaseStatus("syncing", "Synchronizing database tables...");
 
-    if (savedLogs) {
-        syncLogs = JSON.parse(savedLogs);
-    } else {
-        syncLogs = [...defaultSyncLogs];
-        localStorage.setItem("kartunbox_logs", JSON.stringify(syncLogs));
+    try {
+        // Fetch SKUs
+        const { data: dbSkus, error: skuError } = await supabaseClient
+            .from('skus')
+            .select('*');
+
+        if (skuError) throw skuError;
+
+        // Fetch Returns
+        const { data: dbReturns, error: returnsError } = await supabaseClient
+            .from('returns')
+            .select('*');
+
+        if (returnsError) throw returnsError;
+
+        // If fetch succeeded, override local data
+        if (dbSkus) {
+            if (dbSkus.length > 0) {
+                skus = dbSkus.map(item => ({
+                    id: item.id,
+                    code: item.code,
+                    name: item.name,
+                    warehouseStock: item.warehouseStock,
+                    threshold: item.threshold,
+                    ratioAmazon: item.ratioAmazon,
+                    ratioFlipkart: item.ratioFlipkart,
+                    ratioMeesho: item.ratioMeesho
+                }));
+                localStorage.setItem("kartunbox_skus", JSON.stringify(skus));
+            } else {
+                // Database table exists but is empty, seed with mock SKUs
+                addLog("info", "Supabase table 'skus' is empty. Seeding with mock SKUs...");
+                await seedSupabaseSKUs();
+            }
+        }
+
+        if (dbReturns) {
+            if (dbReturns.length > 0) {
+                returns = dbReturns.map(item => ({
+                    id: item.id,
+                    date: item.date,
+                    orderId: item.orderId,
+                    sku: item.sku,
+                    marketplace: item.marketplace,
+                    type: item.type,
+                    qty: item.qty,
+                    reason: item.reason,
+                    status: item.status
+                }));
+                localStorage.setItem("kartunbox_returns", JSON.stringify(returns));
+            } else {
+                // Seed returns table
+                addLog("info", "Supabase table 'returns' is empty. Seeding with default logs...");
+                await seedSupabaseReturns();
+            }
+        }
+
+        updateSupabaseStatus("online", "Connected to Supabase Database (Real-time Sync)");
+        addLog("success", "Successfully loaded latest catalog and logs from Supabase Cloud.");
+
+    } catch (err) {
+        console.warn("Supabase fetch failed. Falling back to local data.", err);
+        updateSupabaseStatus("offline", "Supabase Offline. Local cache active.");
+        addLog("warning", "Database sync failed: " + err.message + ". Running in offline mode.");
     }
 }
 
-// Save data to LocalStorage
+// Seed SKUs helper if Supabase table is empty
+async function seedSupabaseSKUs() {
+    if (!supabaseClient) return;
+    try {
+        const { error } = await supabaseClient
+            .from('skus')
+            .insert(skus);
+        if (error) throw error;
+        addLog("success", "Seeded catalog SKUs to Supabase.");
+    } catch (err) {
+        console.error("Failed to seed SKUs:", err);
+    }
+}
+
+// Seed Returns helper if Supabase table is empty
+async function seedSupabaseReturns() {
+    if (!supabaseClient) return;
+    try {
+        const { error } = await supabaseClient
+            .from('returns')
+            .insert(returns);
+        if (error) throw error;
+        addLog("success", "Seeded default return/RTO logs to Supabase.");
+    } catch (err) {
+        console.error("Failed to seed returns:", err);
+    }
+}
+
+// Save data to LocalStorage (runs in background on data mutations)
 function saveState() {
     localStorage.setItem("kartunbox_skus", JSON.stringify(skus));
     localStorage.setItem("kartunbox_returns", JSON.stringify(returns));
@@ -481,6 +612,7 @@ function initForms() {
                     }
                     skus[idx] = { ...skus[idx], code, name, warehouseStock, threshold, ratioAmazon, ratioFlipkart, ratioMeesho };
                     addLog("info", `Updated SKU details for ${code}. Syncing updates...`);
+                    dbUpsertSKU(skus[idx]);
                 }
             } else {
                 // New SKU
@@ -495,6 +627,7 @@ function initForms() {
                 };
                 skus.push(newSKU);
                 addLog("info", `Added new SKU ${code} to central warehouse. Syncing updates...`);
+                dbUpsertSKU(newSKU);
             }
 
             saveState();
@@ -552,6 +685,7 @@ function initForms() {
 
             returns.push(newReturn);
             addLog("info", `Logged a ${type} for order ${orderId} (${qty}x ${skuCode}) on ${marketplace}.`);
+            dbUpsertReturn(newReturn);
 
             // Automatically update warehouse stock if status is "restocked"
             if (status === "restocked") {
@@ -559,6 +693,7 @@ function initForms() {
                 if (skuItem) {
                     skuItem.warehouseStock = parseInt(skuItem.warehouseStock) + qty;
                     addLog("success", `Auto-Adjust Stock: Added ${qty} units back to Warehouse for SKU ${skuCode}.`);
+                    dbUpsertSKU(skuItem);
                 }
             }
 
@@ -664,6 +799,7 @@ function initModal() {
                     ratioMeesho: rMs 
                 };
                 addLog("info", `Adjusted stock levels for SKU ${skus[idx].code}.`);
+                dbUpsertSKU(skus[idx]);
                 saveState();
                 renderAll();
                 simulateChannelSync();
@@ -687,6 +823,7 @@ window.deleteSKU = function(id) {
     if (confirm(`🗑️ Are you sure you want to delete SKU "${item.code}" from your catalog?`)) {
         skus = skus.filter(s => s.id !== id);
         addLog("warning", `Deleted SKU ${item.code} from the system.`);
+        dbDeleteSKU(id);
         saveState();
         renderAll();
     }
@@ -706,12 +843,14 @@ window.deleteReturn = function(id) {
                 if (skuItem) {
                     skuItem.warehouseStock = Math.max(0, parseInt(skuItem.warehouseStock) - parseInt(record.qty));
                     addLog("info", `Subtracted ${record.qty} units from warehouse stock due to return record deletion.`);
+                    dbUpsertSKU(skuItem);
                 }
             }
         }
 
         returns = returns.filter(r => r.id !== id);
         addLog("warning", `Removed return/RTO log entry for order ${record.orderId}.`);
+        dbDeleteReturn(id);
         saveState();
         renderAll();
         
@@ -1088,4 +1227,89 @@ function initCSVExport() {
         
         addLog("info", "Exported inventory and return data to CSV backup file.");
     });
+}
+
+// === SUPABASE DATABASE OPERATION HELPMATES ===
+
+// Upsert SKU to Supabase
+async function dbUpsertSKU(sku) {
+    if (!supabaseClient) return;
+    try {
+        const { error } = await supabaseClient
+            .from('skus')
+            .upsert({
+                id: sku.id,
+                code: sku.code,
+                name: sku.name,
+                warehouseStock: parseInt(sku.warehouseStock),
+                threshold: parseInt(sku.threshold),
+                ratioAmazon: parseInt(sku.ratioAmazon),
+                ratioFlipkart: parseInt(sku.ratioFlipkart),
+                ratioMeesho: parseInt(sku.ratioMeesho),
+                updated_at: new Date().toISOString()
+            });
+        if (error) throw error;
+        console.log(`SKU ${sku.code} successfully upserted to Supabase.`);
+    } catch (err) {
+        console.error(`Supabase error upserting SKU ${sku.code}:`, err);
+        addLog("error", `Supabase sync failed for SKU ${sku.code}: ` + err.message);
+    }
+}
+
+// Delete SKU from Supabase
+async function dbDeleteSKU(id) {
+    if (!supabaseClient) return;
+    try {
+        const { error } = await supabaseClient
+            .from('skus')
+            .delete()
+            .eq('id', id);
+        if (error) throw error;
+        console.log(`SKU ID ${id} deleted from Supabase.`);
+    } catch (err) {
+        console.error(`Supabase error deleting SKU ${id}:`, err);
+        addLog("error", `Supabase delete failed: ` + err.message);
+    }
+}
+
+// Upsert Return/RTO Log to Supabase
+async function dbUpsertReturn(ret) {
+    if (!supabaseClient) return;
+    try {
+        const { error } = await supabaseClient
+            .from('returns')
+            .upsert({
+                id: ret.id,
+                date: ret.date,
+                orderId: ret.orderId,
+                sku: ret.sku,
+                marketplace: ret.marketplace,
+                type: ret.type,
+                qty: parseInt(ret.qty),
+                reason: ret.reason,
+                status: ret.status,
+                updated_at: new Date().toISOString()
+            });
+        if (error) throw error;
+        console.log(`Return/RTO ${ret.orderId} successfully saved to Supabase.`);
+    } catch (err) {
+        console.error(`Supabase error saving Return ${ret.orderId}:`, err);
+        addLog("error", `Supabase sync failed for Return ${ret.orderId}: ` + err.message);
+    }
+}
+
+// Delete Return/RTO Log from Supabase
+async function dbDeleteReturn(id) {
+    if (!supabaseClient) return;
+    try {
+        const { error } = await supabaseClient
+            .from('returns')
+            .delete()
+            .eq('id', id);
+        if (error) throw error;
+        console.log(`Return ID ${id} deleted from Supabase.`);
+    } catch (err) {
+        console.error(`Supabase error deleting Return ${id}:`, err);
+        addLog("error", `Supabase delete failed: ` + err.message);
+    }
 }

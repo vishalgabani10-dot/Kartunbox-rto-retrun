@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="style.css">
     <!-- Chart.js for premium visualizations -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Supabase JS Client library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -91,6 +93,12 @@
             <div class="header-title">
                 <h1 id="page-title">Dashboard Overview</h1>
                 <p id="page-desc">Real-time e-commerce synchronization and return intelligence.</p>
+                <div class="db-status-container" style="margin-top: 0.5rem; display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem;">
+                    <span class="stock-indicator low-stock" id="supabase-status-indicator">
+                        <span class="indicator-dot"></span>
+                        <span id="supabase-status-text">Connecting to Supabase Database...</span>
+                    </span>
+                </div>
             </div>
             <div class="header-actions">
                 <button class="btn btn-secondary" id="export-csv-btn">
@@ -647,6 +655,6 @@
     </div>
 
     <!-- Script loading -->
-    <script src="app.js"></script>
+    <script src="app_v2.js"></script>
 </body>
 </html>
